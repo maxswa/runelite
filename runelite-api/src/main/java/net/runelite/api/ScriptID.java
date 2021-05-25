@@ -48,6 +48,12 @@ public final class ScriptID
 	public static final int CHATBOX_INPUT = 96;
 
 	/**
+	 * Rebuilds the chatbox and the pmbox
+	 */
+	@ScriptArguments()
+	public static final int SPLITPM_CHANGED = 83;
+
+	/**
 	 * Rebuilds the chatbox
 	 */
 	@ScriptArguments()
@@ -124,7 +130,7 @@ public final class ScriptID
 	 * </ul>
 	 */
 	@ScriptArguments(integer = 1)
-	public static final int QUESTLIST_PROGRESS = 2267;
+	public static final int QUEST_STATUS_GET = 4029;
 
 	/**
 	 * Updates the Diary/Quest interface's scrollbar
@@ -318,7 +324,7 @@ public final class ScriptID
 	 * <li>int (WidgetID) drag parent</li>
 	 * </ul>
 	 */
-	@ScriptArguments(integer = 7)
+	@ScriptArguments(integer = 8, string = 1)
 	public static final int SETTINGS_SLIDER_CHOOSE_ONOP = 3885;
 
 	/**

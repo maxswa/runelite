@@ -27,10 +27,9 @@ package net.runelite.client.plugins.discord;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 import javax.inject.Inject;
+import javax.inject.Named;
 import net.runelite.api.Client;
 import net.runelite.client.discord.DiscordPresence;
 import net.runelite.client.discord.DiscordService;
@@ -70,11 +69,18 @@ public class DiscordStateTest
 	@Bind
 	PartyService partyService;
 
+	@Bind
+	@Named("runelite.title")
+	private String runeliteTitle = "RuneLite";
+
+	@Bind
+	@Named("runelite.version")
+	private String runeliteVersion = "version";
+
 	@Before
 	public void before()
 	{
 		Guice.createInjector(BoundFieldModule.of(this)).injectMembers(this);
-		when(partyService.getLocalPartyId()).thenReturn(UUID.nameUUIDFromBytes("test".getBytes(StandardCharsets.UTF_8)));
 	}
 
 	@Test

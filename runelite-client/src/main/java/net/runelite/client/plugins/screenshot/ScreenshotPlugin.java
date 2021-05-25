@@ -27,6 +27,7 @@ package net.runelite.client.plugins.screenshot;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -34,6 +35,7 @@ import java.awt.image.BufferedImage;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -56,6 +58,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetID;
 import static net.runelite.api.widgets.WidgetID.BARROWS_REWARD_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.CLUE_SCROLL_REWARD_GROUP_ID;
@@ -99,7 +102,7 @@ public class ScreenshotPlugin extends Plugin
 	private static final Pattern NUMBER_PATTERN = Pattern.compile("([0-9]+)");
 	private static final Pattern LEVEL_UP_PATTERN = Pattern.compile(".*Your ([a-zA-Z]+) (?:level is|are)? now (\\d+)\\.");
 	private static final Pattern BOSSKILL_MESSAGE_PATTERN = Pattern.compile("Your (.+) kill count is: <col=ff0000>(\\d+)</col>.");
-	private static final Pattern VALUABLE_DROP_PATTERN = Pattern.compile(".*Valuable drop: ([^<>]+)(?:</col>)?");
+	private static final Pattern VALUABLE_DROP_PATTERN = Pattern.compile(".*Valuable drop: ([^<>]+?\\(((?:\\d+,?)+) coins\\))(?:</col>)?");
 	private static final Pattern UNTRADEABLE_DROP_PATTERN = Pattern.compile(".*Untradeable drop: ([^<>]+)(?:</col>)?");
 	private static final Pattern DUEL_END_PATTERN = Pattern.compile("You have now (won|lost) ([0-9]+) duels?\\.");
 	private static final Pattern QUEST_PATTERN_1 = Pattern.compile(".+?ve\\.*? (?<verb>been|rebuilt|.+?ed)? ?(?:the )?'?(?<quest>.+?)'?(?: [Qq]uest)?[!.]?$");
@@ -110,6 +113,10 @@ public class ScreenshotPlugin extends Plugin
 		"You feel something weird sneaking into your backpack",
 		"You have a funny feeling like you would have been followed");
 	private static final Pattern BA_HIGH_GAMBLE_REWARD_PATTERN = Pattern.compile("(?<reward>.+)!<br>High level gamble count: <col=7f0000>(?<gambleCount>.+)</col>");
+	private static final Set<Integer> REPORT_BUTTON_TLIS = ImmutableSet.of(
+		WidgetID.FIXED_VIEWPORT_GROUP_ID,
+		WidgetID.RESIZABLE_VIEWPORT_OLD_SCHOOL_BOX_GROUP_ID,
+		WidgetID.RESIZABLE_VIEWPORT_BOTTOM_LINE_GROUP_ID);
 
 	private String clueType;
 	private Integer clueNumber;
@@ -186,7 +193,7 @@ public class ScreenshotPlugin extends Plugin
 		SCREENSHOT_DIR.mkdirs();
 		keyManager.registerKeyListener(hotkeyListener);
 
-		final BufferedImage iconImage = ImageUtil.getResourceStreamFromClass(getClass(), "screenshot.png");
+		final BufferedImage iconImage = ImageUtil.loadImageResource(getClass(), "screenshot.png");
 
 		titleBarButton = NavigationButton.builder()
 			.tab(false)
@@ -417,9 +424,13 @@ public class ScreenshotPlugin extends Plugin
 			Matcher m = VALUABLE_DROP_PATTERN.matcher(chatMessage);
 			if (m.matches())
 			{
-				String valuableDropName = m.group(1);
-				String fileName = "Valuable drop " + valuableDropName;
-				takeScreenshot(fileName, "Valuable Drops");
+				int valuableDropValue = Integer.parseInt(m.group(2).replaceAll(",", ""));
+				if (valuableDropValue >= config.valuableDropThreshold())
+				{
+					String valuableDropName = m.group(1);
+					String fileName = "Valuable drop " + valuableDropName;
+					takeScreenshot(fileName, "Valuable Drops");
+				}
 			}
 		}
 
@@ -685,7 +696,7 @@ public class ScreenshotPlugin extends Plugin
 			executor.submit(() -> takeScreenshot(fileName, subDir, img));
 		};
 
-		if (config.displayDate())
+		if (config.displayDate() && REPORT_BUTTON_TLIS.contains(client.getTopLevelInterfaceId()))
 		{
 			screenshotOverlay.queueForTimestamp(imageCallback);
 		}
